@@ -10,6 +10,7 @@ using Vidly.ViewModels;
 namespace Vidly.Controllers
 {
     [RoutePrefix("Customers")]
+    [Authorize]
     public class CustomersController : Controller
     {
         private ApplicationDbContext _context;
@@ -30,6 +31,7 @@ namespace Vidly.Controllers
 
             var viewModel = new CustomerFormViewModel
             {
+                Customer=new Customer(),
                 MembershipTypes = membershipTypes
             };
             return View("CustomerForm",viewModel);
@@ -53,9 +55,19 @@ namespace Vidly.Controllers
 
         [Route("Save")]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public ActionResult Save(Customer customer)
         {
-            if(customer.Id == 0)
+            if (!ModelState.IsValid)
+            {
+                var viewModel = new CustomerFormViewModel
+                {
+                    Customer = customer,
+                    MembershipTypes = _context.MembershipTypes.ToList()
+                };
+                return View("CustomerForm", viewModel);
+            }
+            if (customer.Id == 0)
                 _context.Customers.Add(customer);
             else
             {
@@ -73,8 +85,11 @@ namespace Vidly.Controllers
         [Route("")]
         public ActionResult Index()
         {
-            var customers = _context.Customers.Include(c => c.MembershipType).ToList();//Deferred Execution
-            return View(customers);
+            /*Getting customers list from API and rendering on client side so don't need customers list from here now*/
+            //var customers = _context.Customers.Include(c => c.MembershipType).ToList();//Deferred Execution
+            //return View(customers);
+
+            return View();
         }
 
         [Route("Details/{id}")]

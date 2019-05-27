@@ -11,6 +11,8 @@ using Vidly.ViewModels;
 namespace Vidly.Controllers
 {
     [RoutePrefix("Movies")]
+    [Route("{action = index}")]
+    [Authorize]
     public class MoviesController : Controller
     {
         private ApplicationDbContext _context;
@@ -27,27 +29,35 @@ namespace Vidly.Controllers
 
         // GET: Movies
         [Route("")]
+        [Authorize(Roles = RoleName.CanManageMovies)]
         public ActionResult Index()
         {
-            var movies = _context.Movies.Include(e=>e.Genre).ToList();
-            return View(movies);
+            //var movies = _context.Movies.Include(e=>e.Genre).ToList();
+            //return View(movies);
+
+            if (User.IsInRole(RoleName.CanManageMovies))
+                return View("List");
+           
+            return View("ReadOnlyList");
         }
 
         [Route("New")]
+        [Authorize(Roles = RoleName.CanManageMovies)]
         public ActionResult New()
         {
             var genres = _context.Genres.ToList();
 
             var viewModel = new MovieFormViewModel
             {
-                NewOrEdit = "New",
-                Genres = genres
+                NewOrEdit = "New",                
+                Genres = genres               
             };           
 
             return View("MovieForm",viewModel);
         }
 
         [Route("Edit")]
+        [Authorize(Roles = RoleName.CanManageMovies)]
         public ActionResult Edit(int id)
         {
             var movie = _context.Movies.SingleOrDefault(c => c.Id == id);
@@ -55,10 +65,9 @@ namespace Vidly.Controllers
             if (movie == null)
                 return HttpNotFound();
 
-            var viewModel = new MovieFormViewModel
+            var viewModel = new MovieFormViewModel(movie)
             {
-                NewOrEdit="Edit",
-                Movie = movie,
+                NewOrEdit="Edit",               
                 Genres = _context.Genres.ToList()
             };
 
@@ -67,8 +76,18 @@ namespace Vidly.Controllers
 
         [Route("Save")]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public ActionResult Save(Movie movie)
-        {
+        {          
+            if(!ModelState.IsValid)
+            {
+                var viewModel = new MovieFormViewModel(movie)
+                {
+                    NewOrEdit = "Edit",
+                    Genres = _context.Genres.ToList()
+                };
+                return View("MovieForm", viewModel);
+            }
             if (movie.Id == 0)
             {
                 movie.DateAdded= DateTime.Now;
