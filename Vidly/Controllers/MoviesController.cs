@@ -77,6 +77,7 @@ namespace Vidly.Controllers
         [Route("Save")]
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleName.CanManageMovies)]
         public ActionResult Save(Movie movie)
         {          
             if(!ModelState.IsValid)
@@ -109,6 +110,7 @@ namespace Vidly.Controllers
         }
 
         [Route("Details/{id}")]
+        [Authorize(Roles = RoleName.CanManageMovies)]
         public ActionResult Details(int id)
         {
             var movie = _context.Movies.Include(e => e.Genre).SingleOrDefault(x => x.Id == id);
